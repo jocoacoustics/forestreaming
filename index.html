@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Monitor dinámico (GitHub Pages)</title>
+  <title>Monitor dinámico embebido</title>
   <style>
     html, body {
       margin: 0;
@@ -12,82 +12,69 @@
       font-family: system-ui, sans-serif;
       background: #020617;
       color: #e5e7eb;
-      display: flex;
-      align-items: center;
-      justify-content: center;
     }
-    .card {
+    #topbar {
+      box-sizing: border-box;
+      width: 100%;
+      padding: 8px 14px;
+      font-size: 13px;
       background: #020617;
-      padding: 24px 28px;
-      border-radius: 18px;
-      box-shadow: 0 18px 40px rgba(15,23,42,0.7);
-      max-width: 480px;
-      text-align: center;
-      border: 1px solid rgba(148,163,184,0.3);
+      border-bottom: 1px solid rgba(148,163,184,0.4);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
     }
-    h1 {
-      font-size: 20px;
-      margin-bottom: 8px;
-    }
-    p {
-      font-size: 14px;
-      margin-bottom: 18px;
+    #status {
       color: #cbd5f5;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
-    a.boton {
-      display: inline-block;
-      padding: 10px 22px;
-      border-radius: 999px;
+    #fallback-link {
+      font-size: 12px;
+      color: #22c55e;
       text-decoration: none;
       font-weight: 600;
-      background: linear-gradient(135deg, #22c55e, #14b8a6);
-      color: #020617;
-      box-shadow: 0 10px 30px rgba(34,197,94,0.6);
-      transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
     }
-    a.boton:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 14px 36px rgba(34,197,94,0.8);
-      filter: brightness(1.05);
+    #fallback-link:hover {
+      text-decoration: underline;
     }
-    a.boton:active {
-      transform: translateY(0);
-      box-shadow: 0 8px 24px rgba(34,197,94,0.6);
-      filter: brightness(0.97);
+    #frame-container {
+      width: 100%;
+      height: calc(100% - 40px);
     }
-    .status {
-      font-size: 12px;
-      color: #94a3b8;
-      margin-top: 10px;
+    iframe {
+      border: none;
+      width: 100%;
+      height: 100%;
+      background: #020617;
     }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1>Monitor dinámico</h1>
-    <p>
-      El enlace se lee en vivo desde <code>enlace.txt</code> en este mismo sitio.
-    </p>
-
-    <a id="link-monitor" class="boton" href="#" target="_blank" rel="noopener noreferrer">
-      Cargando enlace...
+  <div id="topbar">
+    <div id="status">Consultando enlace desde <code>enlace.txt</code>…</div>
+    <a id="fallback-link" href="#" target="_blank" rel="noopener noreferrer" style="display:none;">
+      Abrir en pestaña nueva
     </a>
+  </div>
 
-    <div id="status" class="status">
-      Consultando configuración…
-    </div>
+  <div id="frame-container">
+    <iframe id="viewer" src=""></iframe>
   </div>
 
   <script>
-    // Ruta RELATIVA: mismo origen -> sin CORS
+    // Ruta RELATIVA: el archivo enlace.txt está junto a index.html
     const RAW_URL = "enlace.txt";
 
     async function cargarEnlace() {
       const status = document.getElementById("status");
-      const link = document.getElementById("link-monitor");
+      const iframe = document.getElementById("viewer");
+      const fallbackLink = document.getElementById("fallback-link");
 
       try {
-        status.textContent = "Leyendo enlace…";
+        status.textContent = "Leyendo enlace desde enlace.txt…";
 
         const resp = await fetch(RAW_URL, { cache: "no-store" });
         if (!resp.ok) {
@@ -101,15 +88,18 @@
           throw new Error("El contenido de enlace.txt no parece una URL válida");
         }
 
-        link.href = url;
-        link.textContent = "Abrir monitor";
-        status.textContent = "Enlace cargado: " + url;
+        status.textContent = "Mostrando: " + url;
+        fallbackLink.style.display = "inline";
+        fallbackLink.href = url;
+
+        // Mostrar la página del monitor dentro del iframe
+        iframe.src = url;
 
       } catch (err) {
         console.error(err);
         status.textContent = "Error: " + err.message;
-        link.textContent = "Error cargando enlace";
-        link.href = "#";
+        fallbackLink.style.display = "none";
+        iframe.src = "about:blank";
       }
     }
 
